@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8"> 
+     <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Welcome to Vue by ChrisVz</title>
+      <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+      <script src="https://unpkg.com/vue"></script>
+      <script src="https://unpkg.com/vue-numeric"></script>
+      <script src="https://unpkg.com/axios/dist/axios.min.js"></script>
+    </head>
+    <body>
+     <div class="container">
+      <div id="app">
+        <img src="https://vuejs.org/images/logo.png" alt="Vue logo">
+        <h1>{{ greeting }}</h1>
+        <h3>{{ datum }} -- Kupovni tečaj HNB: {{ kupovni_tecaj }}, Srednji tečaj HNB: -- {{ srednji_tecaj }}, Prodajni tečaj HNB: -- {{ prodajni_tecaj }}, Valuta: -- {{ valuta }} </h3>
+        <form>
+                                    <div class="form-group">
+                                        <label for="from_amount1" class="col-sm-5 control-label">Unos cijene / EUR</label>
+                                        
+                                          <div class="input-group"> <span class="input-group-addon"> EUR </span>
+                                              <vue-numeric class="form-control" name="from_amount" v-model="from_amount" currency="EUR" separator="," v-bind:minus="false" v-bind:precision="2" v-bind:min="0" v-bind:max="100000"></vue-numeric>
+                                              
+                                          </div>
+                                          
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="to_amount1" class="col-sm-5 control-label">Unos cijene / HRK</label>
+                                       
+                                          <div class="input-group"> <span class="input-group-addon"> HRK </span>
+                                              <vue-numeric class="form-control" name="to_amount" v-model="to_amount" currency="HRK" separator="," v-bind:minus="false" v-bind:precision="2" v-bind:min="0" v-bind:max="760000"></vue-numeric>
+                                             
+                                          </div>
+                                       
+                                    </div>
+        </form>
+        <p> Converter automatski preračunava iznos prema današnjem srednjem tečaju HNB bilo da upišete HRK ili EUR </p>
+       </div>
+      </div>
+      <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/bootstrap.native/2.0.13/bootstrap-native.min.js"></script>
+      <script>
+      Vue.use(VueNumeric.default)
+      </script> 
+      <script>
+        new Vue({
+          el: '#app',
+          data: {
+            greeting: 'Primjer jednostavnog konvertera valuta Hrk / Eur!',
+            from_amount: 0,
+            to_amount: 0,
+            tecaj: '7,45',
+            datum:'',
+            kupovni_tecaj:'',
+            srednji_tecaj:'',
+            prodajni_tecaj:'',
+            valuta:'',
+          },
+          methods: {
+            humanizeURL: function (url) { // ne koristim trenutno
+                                return url
+                                  .replace(/^https?:\/\//, '')
+                                  .replace(/\/$/, '')
+            },
+            fetchData(){ // dohvat tecaja sa hnb-a pomocu axiosa --- CORS friendly *
+                                let obj=this; 
+                                axios.get('hnbapi.php').then( (response)=>{
+                                      console.log(JSON.parse(response.data.hnb)); 
+                                      let jsonData=JSON.parse(response.data.hnb); 
+                                  
+                                      let tecajtocka = jsonData[0].srednji_tecaj.replace(/,/, '.'); // srednji tecaj koristimo za izracun promjena zarez tocka za ispravni floatval
+
+                                      obj.datum = jsonData[0].datum;
+                                      obj.kupovni_tecaj = jsonData[0].kupovni_tecaj;
+                                      obj.prodajni_tecaj = jsonData[0].prodajni_tecaj;
+                                      obj.srednji_tecaj = jsonData[0].srednji_tecaj;
+                                      obj.valuta = jsonData[0].valuta;
+
+                                      obj.tecaj=parseFloat(tecajtocka); 
+                                      
+                                }) .catch(function (error){
+                                                            console.log(error);
+                                });
+                  }, 
+          },
+          created() {
+
+                    let ins = this;
+                    
+                    ins.fetchData(); 
+                    console.log(ins.tecaj);
+          }, 
+          watch:{
+                from_amount(value){
+                                    this.to_amount=(value * this.tecaj).toFixed(2);
+                                    console.log('val',parseFloat(value), this.to_amount, this.from_amount);
+                }, 
+                to_amount(value){
+                                   this.from_amount=(value / this.tecaj).toFixed(2);
+                                   console.log('val2',parseFloat(value), this.from_amount, this.to_amount);
+                },
+          }
+        })
+      </script>
+    </body>
+</html>
